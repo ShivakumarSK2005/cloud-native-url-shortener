@@ -1,5 +1,7 @@
 const { v4: uuidv4 } = require("uuid");
 
+const redisClient = require("../config/redis");
+
 const {
     createShortUrl,
     findUrlByShortCode,
@@ -76,15 +78,46 @@ const redirectUrl = async (req, res) => {
 
     try {
 
-        const url =
-            await findUrlByShortCode(
+        let url;
+
+        const cachedUrl =
+            await redisClient.get(
                 shortCode
             );
 
-        if (!url) {
-            return res.status(404).json({
-                message: "Short URL not found"
-            });
+        if (cachedUrl) {
+
+            console.log(
+                "Cache Hit:",
+                shortCode
+            );
+
+            url = JSON.parse(
+                cachedUrl
+            );
+
+        } else {
+
+            console.log(
+                "Cache Miss:",
+                shortCode
+            );
+
+            url =
+                await findUrlByShortCode(
+                    shortCode
+                );
+
+            if (!url) {
+                return res.status(404).json({
+                    message: "Short URL not found"
+                });
+            }
+
+            await redisClient.set(
+                shortCode,
+                JSON.stringify(url)
+            );
         }
 
         await incrementClickCount(
