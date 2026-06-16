@@ -3,6 +3,8 @@ services:
   postgres:
     image: postgres:16
     container_name: auth-postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
@@ -45,7 +47,19 @@ services:
       DB_PASSWORD: postgres
       DB_NAME: url_db
       JWT_SECRET: my_super_secret_jwt_key_12345
-      REDIS_URL: redis://redis:6379 
+      REDIS_URL: redis://redis:6379
     depends_on:
       - postgres
       - redis
+
+  api-gateway:
+    build: ./gateway
+    container_name: api-gateway
+    ports:
+      - "80:80"
+    depends_on:
+      - auth-service
+      - url-service
+
+volumes:
+  postgres_data:
